@@ -73,7 +73,7 @@ def upload_pdf_to_supabase(pdf_bytes, submitted_data):
         supabase = init_supabase()
         #generate unique pdf file name
         first_name = submitted_data.get('First Name', 'Unknown')
-        last_name = submitted_data.get('Last Name' 'Unnamed')
+        last_name = submitted_data.get('Last Name', 'Unnamed')
         mrn = submitted_data.get('Medical Record Number', 'NoMRN')
         unique_id = str(uuid.uuid4())[:8] #use this to avoid duplicate MRN submit
 
