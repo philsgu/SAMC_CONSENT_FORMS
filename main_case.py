@@ -10,6 +10,8 @@ import io
 import os
 import fitz # PYMuPDF
 import base64
+import uuid
+
 
 today = date.today()
 today_str = today.strftime("%m/%d/%Y")
@@ -46,7 +48,88 @@ STATE_NAMES = {
     'WI': 'Wisconsin', 'WY': 'Wyoming'
 }
 
-    
+#Start Supabase Data Server Connection
+@st.cache_resource
+def init_supabase():
+    """
+    Initialize Supbase Client using Streamlit
+    """
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SERVICE_ROW"]
+    supbase: Client = create_client(url, key)
+    return supbase
+# UPLOAD Produced PDF to Supbase
+def upload_pdf_to_supabase(pdf_bytes, submitted_data):
+    """
+    Upload PDF to Supbase Bucket Storage
+    Args:
+        pdf_bytes (bytes): PDF document bytes
+        submitted_data (dict): Submitted form data for filename generation
+    Returns:
+        tuple: (sucess_flag, file_path or error_message)
+    """
+    try:
+        #initialize the Supbase client func
+        supabase = init_supabase()
+        #generate unique pdf file name
+        first_name = submitted_data.get('First Name', 'Unknown')
+        last_name = submitted_data.get('Last Name' 'Unnamed')
+        mrn = submitted_data.get('Medical Record Number', 'NoMRN')
+        unique_id = str(uuid.uuid4())[:8] #use this to avoid duplicate MRN submit
+
+        #Create filename with above identifier info
+        filename = f"{last_name}_{first_name}_{mrn}_{unique_id}.pdf"
+        file_path = f"case_pdf_received/{filename}"
+
+        # Upload PDF to Supbase storage bucket
+        res = supabase.storage.from_('completed_consent').upload(
+            file=pdf_bytes,
+            path=file_path,
+            file_options={"content-type": "application/pdf"}
+        )
+        return True, file_path
+    except Exception as e:
+        st.error(f"Error uploading PDF to secured storage: {e}")
+        return False, str(e)
+
+def submit_to_supabase(submitted_data, pdf_path=None):
+    """
+    Submit form data to Supabase
+    Args:
+        submitted_data (dict): Dict of submitted form data
+        pdf_path (str, optional): Path to uploaded PDF in Supabase storage
+    Returns:
+        tuple: (success_flag, error_message)
+    """
+    try:
+        # Initializa Supabase client
+        supabase = init_supabase()
+
+        # convert numpy signature to base64 if it exists
+        if isinstance(submitted_data.get('Signature'), np.ndarray):
+            # Convert numpy array to PIL Image
+            sig_img = Image.fromarray(submitted_data['Signature'])
+            
+            # Convert image to base64
+            buffered = io.BytesIO()
+            sig_img.save(buffered, format="PNG")
+            submitted_data['Signature'] = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        # ADD PDF path to sumitted data if available
+        if pdf_path:
+            submitted_data['PDF_Storage_Path'] = pdf_path
+        # Insert data into Supabase
+        data, error = supabase.table("consentsamc_results").insert(submitted_data).execute()
+
+        if error:
+            st.error(f"Supabase Insertion Error: {error}")
+            return False, str(error)
+        return True, "Data sucessfully submitted to Supabase"
+    except Exception as e:
+        st.error(f"Unexpected error submitted to Supabase: {e}")
+        return False, str(e)
+
+
+
 # Name validation function
 def validate_name(name, field_name="Name"):
     if not name:
@@ -337,12 +420,28 @@ def main():
 
     # Display submitted data if exists
     if st.session_state.submitted_data:
-        st.success("Form submitted successfully!")
+        #st.success("Form submitted successfully!")
         pdf_bytes = create_pdf(**st.session_state.submitted_data)
-                # Display PDF
-        display_pdf(pdf_bytes)  
-        st.write("Submitted Data:", st.session_state.submitted_data)
 
+        if pdf_bytes:
+            # upload PDF to Supabase storage
+            pdf_upload_success, pdf_storage_result = upload_pdf_to_supabase(pdf_bytes, st.session_state.submitted_data)
+            if pdf_upload_success:
+                # submit to Supabase, includding PDF path
+                supabase_success, supabase_message = submit_to_supabase(
+                    st.session_state.submitted_data,
+                    pdf_path=pdf_storage_result
+                )
+                if supabase_success:
+                    # Display PDF
+                    display_pdf(pdf_bytes)  
+                    st.success("Form data successfully submitted. Copies will be sent out via email/SMS")
+                else:
+                    st.error(f"OOPS! Submission failed: {supabase_message}")
+            else:
+                st.error(f"PDF server upload failed: {pdf_storage_result}")
+        else:
+            st.error("Failed to gnerate PDF")
 
     with st.form("validation_form"):
         # Patient Information
@@ -390,8 +489,6 @@ def main():
             key='phone',
             placeholder='Enter Cell Phone Number'
         )   
-
-       
 
         col1, col2 = st.columns(2)
         with col1:
@@ -444,8 +541,7 @@ def main():
             key='authorized_person',
             placeholder='Enter name and relationship'
         )     
-       
-        
+               
         # SUBMITTER INFORMATION
         st.header("SAMC Authorized Information")
         col1, col2 = st.columns(2)
