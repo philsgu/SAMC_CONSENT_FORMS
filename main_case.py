@@ -424,22 +424,18 @@ def main():
         pdf_bytes = create_pdf(**st.session_state.submitted_data)
 
         if pdf_bytes:
+            display_pdf(pdf_bytes)
             # upload PDF to Supabase storage
-            pdf_upload_success, pdf_storage_result = upload_pdf_to_supabase(pdf_bytes, st.session_state.submitted_data)
+            pdf_upload_success = upload_pdf_to_supabase(pdf_bytes, st.session_state.submitted_data)
             if pdf_upload_success:
                 # submit to Supabase, includding PDF path
-                supabase_success, supabase_message = submit_to_supabase(
+                submit_to_supabase(
                     st.session_state.submitted_data,
-                    pdf_path=pdf_storage_result
-                )
-                if supabase_success:
-                    # Display PDF
-                    display_pdf(pdf_bytes)  
-                    st.success("Form data successfully submitted. Copies will be sent out via email/SMS")
-                else:
-                    st.error(f"OOPS! Submission failed: {supabase_message}")
+                    pdf_path=pdf_upload_success
+                )                  
+                st.success("Form data successfully submitted. Copies will be sent out via email/SMS")                
             else:
-                st.error(f"PDF server upload failed: {pdf_storage_result}")
+                st.error(f"Failed to upload PDF to secure server: {pdf_upload_success}")
         else:
             st.error("Failed to gnerate PDF")
 
