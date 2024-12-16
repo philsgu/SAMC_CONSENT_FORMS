@@ -283,20 +283,23 @@ def display_pdf(pdf_bytes):
         # Create base64 encoded PDF for viewing
         base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
         
-        # Embed PDF in iframe for viewing and downloading
-        pdf_display = f'''
-        <div key="{hash(pdf_bytes)}">
-        <iframe src="data:application/pdf;base64,{base64_pdf}" 
-                width="700" 
-                height="1000" 
-                type="application/pdf">
-        </iframe>
-        <a href="data:application/pdf;base64,{base64_pdf}" 
-           download="case_study_consent.pdf">
-            Download PDF
-        </a>
-        '''
-        st.markdown(pdf_display, unsafe_allow_html=True)
+        # Use Streamlit's download button
+        st.download_button(
+            label="Download Case Study Consent PDF",
+            data=pdf_bytes,
+            file_name="case_study_consent.pdf",
+            mime="application/pdf"
+        )
+        
+        # Try a different approach for PDF viewing
+        st.markdown(f'''
+        <embed 
+            src="data:application/pdf;base64,{base64_pdf}" 
+            width="700" 
+            height="1000" 
+            type="application/pdf">
+        </embed>
+        ''', unsafe_allow_html=True)
     else:
         st.error("Failed to generate PDF")
 
