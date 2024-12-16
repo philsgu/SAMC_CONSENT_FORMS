@@ -154,7 +154,7 @@ def validate_name(name, field_name="Name"):
 # Email validation function
 def validate_email(email, field_name="Email"):
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    samc_pattern = r'^[a-zA-Z0-9._%+-]+@samc\.com$'
+    samc_pattern = re.compile(r'^[a-zA-Z0-9._%+-]+@samc\.com$', re.IGNORECASE)
     if field_name == "Email":
         if not re.match(pattern, email):
             return False, f"Please enter a valid {field_name} address"
