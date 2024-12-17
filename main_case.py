@@ -112,12 +112,9 @@ def upload_and_submit_to_supabase(submitted_data):
         database_data.pop('Signature', None)  # Remove signature data
         
         # Insert data into Supabase
-        data, error = supabase.table("consentsamc_results").insert(database_data).execute()
-        
-        if error:
-            return False, f"Supabase Insertion Error: {error}"
-        
-        return True, "Data successfully submitted to Supabase"
+        supabase.table("consentsamc_results").insert(database_data).execute()
+    
+        return True, "Data successfully submitted!"
     
     except Exception as e:
         return False, f"Unexpected error: {e}"
