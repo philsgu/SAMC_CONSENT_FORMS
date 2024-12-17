@@ -58,76 +58,69 @@ def init_supabase():
     key = st.secrets["SERVICE_ROW"]
     supbase: Client = create_client(url, key)
     return supbase
-# UPLOAD Produced PDF to Supbase
-def upload_pdf_to_supabase(pdf_bytes, submitted_data):
+
+# UPLOAD PDF and DATA to Supbase
+def upload_and_submit_to_supabase(submitted_data):
     """
-    Upload PDF to Supbase Bucket Storage
+    Unified function to upload PDF and submit data to Supabase with duplicate prevention
+    
     Args:
-        pdf_bytes (bytes): PDF document bytes
-        submitted_data (dict): Submitted form data for filename generation
+        submitted_data (dict): Dictionary containing all form submission data
+    
     Returns:
-        tuple: (sucess_flag, file_path or error_message)
+        tuple: (success_flag, message)
     """
     try:
-        #initialize the Supbase client func
+        # Initialize Supabase client
         supabase = init_supabase()
-        #generate unique pdf file name
+        
+        # Generate unique identifiers
         first_name = submitted_data.get('First Name', 'Unknown')
         last_name = submitted_data.get('Last Name', 'Unnamed')
         mrn = submitted_data.get('Medical Record Number', 'NoMRN')
-        unique_id = str(uuid.uuid4())[:8] #use this to avoid duplicate MRN submit
-
-        #Create filename with above identifier info
+        unique_id = str(uuid.uuid4())[:8]
+        
+        # Check for existing records to prevent duplicates
+        existing_records = supabase.table("consentsamc_results").select("*").filter(
+            "Medical Record Number", "eq", mrn
+        ).execute()
+        
+        if existing_records.data:
+            pass
+            # can insert a popup with existing data of the contact person if matching data exist later
+            #return False, f"Record for MRN {mrn} already exists"
+        
+        # Generate PDF
+        pdf_bytes = create_pdf(**submitted_data)
+        
+        if not pdf_bytes:
+            return False, "Failed to generate PDF"
+        
+        # Create filename for PDF
         filename = f"{last_name}_{first_name}_{mrn}_{unique_id}.pdf"
         file_path = f"case_pdf_received/{filename}"
-
-        # Upload PDF to Supbase storage bucket
-        res = supabase.storage.from_('completed_consent').upload(
+        
+        # Upload PDF to Supabase storage
+        pdf_upload = supabase.storage.from_('completed_consent').upload(
             file=pdf_bytes,
             path=file_path,
             file_options={"content-type": "application/pdf"}
         )
-        return True, file_path
-    except Exception as e:
-        st.error(f"Error uploading PDF to secured storage: {e}")
-        return False, str(e)
-
-def submit_to_supabase(submitted_data, pdf_path=None):
-    """
-    Submit form data to Supabase
-    Args:
-        submitted_data (dict): Dict of submitted form data
-        pdf_path (str, optional): Path to uploaded PDF in Supabase storage
-    Returns:
-        tuple: (success_flag, error_message)
-    """
-    try:
-        # Initializa Supabase client
-        supabase = init_supabase()
-
-        # convert numpy signature to base64 if it exists
-        if isinstance(submitted_data.get('Signature'), np.ndarray):
-            # Convert numpy array to PIL Image
-            sig_img = Image.fromarray(submitted_data['Signature'])
-            
-            # Convert image to base64
-            buffered = io.BytesIO()
-            sig_img.save(buffered, format="PNG")
-            submitted_data['Signature'] = base64.b64encode(buffered.getvalue()).decode('utf-8')
-        # ADD PDF path to sumitted data if available
-        if pdf_path:
-            submitted_data['PDF_Storage_Path'] = pdf_path
+        
+        # Create a copy of submitted data without signature and PDF path
+        database_data = submitted_data.copy()
+        database_data.pop('Signature', None)  # Remove signature data
+        
         # Insert data into Supabase
-        data, error = supabase.table("consentsamc_results").insert(submitted_data).execute()
-
+        data, error = supabase.table("consentsamc_results").insert(database_data).execute()
+        
         if error:
-            st.error(f"Supabase Insertion Error: {error}")
-            return False, str(error)
-        return True, "Data sucessfully submitted to Supabase"
+            return False, f"Supabase Insertion Error: {error}"
+        
+        return True, "Data successfully submitted to Supabase"
+    
     except Exception as e:
-        st.error(f"Unexpected error submitted to Supabase: {e}")
-        return False, str(e)
-
+        return False, f"Unexpected error: {e}"
 
 
 # Name validation function
@@ -422,22 +415,9 @@ def main():
     if st.session_state.submitted_data:
         #st.success("Form submitted successfully!")
         pdf_bytes = create_pdf(**st.session_state.submitted_data)
+        display_pdf(pdf_bytes)
 
-        if pdf_bytes:
-            display_pdf(pdf_bytes)
-            # upload PDF to Supabase storage
-            pdf_upload_success = upload_pdf_to_supabase(pdf_bytes, st.session_state.submitted_data)
-            if pdf_upload_success:
-                # submit to Supabase, includding PDF path
-                submit_to_supabase(
-                    st.session_state.submitted_data,
-                    pdf_path=pdf_upload_success
-                )                  
-                st.success("Form data successfully submitted. Copies will be sent out via email/SMS")                
-            else:
-                st.error(f"Failed to upload PDF to secure server: {pdf_upload_success}")
-        else:
-            st.error("Failed to gnerate PDF")
+     
 
     with st.form("validation_form"):
         # Patient Information
@@ -621,20 +601,25 @@ def main():
                     "Employee Department": employee_department,
                     "Case Study Diagnosis": case_study_diagnosis,
                 }
-                # clear any previous submission data
-                if 'submitted_data' in st.session_state:
+                # Attempt to upload and submit
+                success, message = upload_and_submit_to_supabase(submitted_data)
+                if success:
+                    # clear previous submission data
+                    st.session_state.submitted = False
                     st.session_state.submitted_data = None
-                # Set submitted flag and data
-                st.session_state.submitted = True
-                st.session_state.submitted_data = submitted_data
-                # rerun the form              
-                st.rerun()
+
+                    # Show success message
+                    st.success(message)
+                    # Reset form 
+                    st.rerun()
+                else:
+                    # Show error message
+                    st.error(message)
             else:
                 # Display validation errors
                 for valid, message in validations:
                     if not valid:
                         st.error(message)
-
 
 # Run the main function
 if __name__ == "__main__":
