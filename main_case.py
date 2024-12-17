@@ -410,7 +410,7 @@ def main():
 
     # Display submitted data if exists
     if st.session_state.submitted_data:
-        #st.success("Form submitted successfully!")
+        st.success("Form submitted successfully!")
         pdf_bytes = create_pdf(**st.session_state.submitted_data)
         display_pdf(pdf_bytes)
 
@@ -599,19 +599,17 @@ def main():
                     "Case Study Diagnosis": case_study_diagnosis,
                 }
                 # Attempt to upload and submit
-                success, message = upload_and_submit_to_supabase(submitted_data)
-                if success:
-                    # clear previous submission data
-                    st.session_state.submitted = False
+                upload_and_submit_to_supabase(submitted_data)
+                # Clear any previous submission data
+                if 'submitted_data' in st.session_state:
                     st.session_state.submitted_data = None
 
-                    # Show success message
-                    st.success(message)
-                    # Reset form 
-                    st.rerun()
-                else:
-                    # Show error message
-                    st.error(message)
+                # Set submitted flag and store the new data
+                st.session_state.submitted = True
+                st.session_state.submitted_data = submitted_data
+
+                # Rerun the form
+                st.rerun()
             else:
                 # Display validation errors
                 for valid, message in validations:
