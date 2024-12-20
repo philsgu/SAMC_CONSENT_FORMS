@@ -113,6 +113,8 @@ def upload_and_submit_to_supabase(submitted_data):
         
         # ADD the PDF file path to the database data
         database_data['pdf_file_path'] = file_path
+        #test above
+        st.info(database_data['pdf_file_path'])
         
         # Insert data into Supabase
         supabase.table("consentsamc_results").insert(database_data).execute()
