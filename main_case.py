@@ -442,6 +442,10 @@ def main():
         for key in ['first_name', 'last_name', 'email', 'phone', 'address', 'state','city','zipcode', 'dob', 'mrn', 'authorized_person', 'employee_first_name', 'employee_last_name', 'employee_email', 'employee_department', 'case_study_diagnosis']:
             if key in st.session_state:
                 st.session_state[key] = ''
+
+    #Add proceed click session state for once shown
+    if "proceed_clicked" not in st.session_state:
+        st.session_state.proceed_clicked = False 
             
     # Display submitted data exists
     if st.session_state.submitted_data:
@@ -456,15 +460,19 @@ def main():
             # Ask if user wants to proceed
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("Proceed Submission ANYWAY"):
-                    # Foce submission by setting existing_data to None
-                    success, message, _ = upload_and_submit_to_supabase(st.session_state.submitted_data, force_upload=True)
-                    # add ONLY one submit
-                    st.success("Form submitted successfully!")
-                    
-                    pdf_bytes = create_pdf(**st.session_state.submitted_data)
-                    display_pdf(pdf_bytes)
-                    st.session_state.submitted_data = None
+                #show if not clicked
+                if not st.session_state.proceed_clicked:
+                    if st.button("Proceed Submission ANYWAY"):
+                        # Mark the button as clicked
+                        st.session_state.proceed_clicked = True
+                        # Foce submission by setting existing_data to None
+                        success, message, _ = upload_and_submit_to_supabase(st.session_state.submitted_data, force_upload=True)
+                        # add ONLY one submit
+                        st.success("Form submitted successfully!")
+                        
+                        pdf_bytes = create_pdf(**st.session_state.submitted_data)
+                        display_pdf(pdf_bytes)
+                        st.session_state.submitted_data = None
             with col2:
                 pass
                 # if st.button("Cancel Submission"):
