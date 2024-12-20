@@ -113,7 +113,7 @@ def upload_and_submit_to_supabase(submitted_data):
                 submission_date, auth_type = get_submission_date_info(record)
                 warning_message += f"""
                 Submission {i}:
-                - Name: {record.get("Employee First Name', '')} {record.get("Employee Last Name', '')}
+                - Name: {record.get('Employee First Name', '')} {record.get('Employee Last Name', '')}
                 - Dept: {record.get('Employee Department', '')}
                 - Email: {record.get('Employee Email', '')}
                 - Date Submitted: {submission_date}({auth_type} Authorization)
