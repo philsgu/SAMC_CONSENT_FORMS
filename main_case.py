@@ -466,11 +466,11 @@ def main():
                     for key in list(st.session_state.keys()):
                         del st.session_state[key]
                     st.rerun()
-    else:
-        # No duplicates found, proceed normally
-        st.success("No duplicate submissions found! Form submitted successfully!")
-        pdf_bytes = create_pdf(**st.session_state.submitted_data)
-        display_pdf(pdf_bytes)
+        else:
+            # No duplicates found, proceed normally
+            st.success("No duplicate submissions found! Form submitted successfully!")
+            pdf_bytes = create_pdf(**st.session_state.submitted_data)
+            display_pdf(pdf_bytes)
 
      
 
