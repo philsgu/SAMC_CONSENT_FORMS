@@ -149,10 +149,10 @@ def upload_and_submit_to_supabase(submitted_data, force_upload=False):
         # Insert data into Supabase
         supabase.table("consentsamc_results").insert(database_data).execute()
     
-        return True, "Data successfully submitted!"
+        return True, "Data successfully submitted!", None
     
     except Exception as e:
-        return False, f"Unexpected error: {e}"
+        return False, f"Unexpected error: {e}", None
 
 ####################### VALIDATION FUNCTIONS #############################
 
