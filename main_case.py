@@ -443,7 +443,7 @@ def main():
             if key in st.session_state:
                 st.session_state[key] = ''
             
-    # Display submitted data if exists
+    # Display submitted data exists
     if st.session_state.submitted_data:
         success, message, existing_data = upload_and_submit_to_supabase(st.session_state.submitted_data)
         if existing_data:
@@ -459,7 +459,9 @@ def main():
                 if st.button("Proceed Submission ANYWAY"):
                     # Foce submission by setting existing_data to None
                     success, message, _ = upload_and_submit_to_supabase(st.session_state.submitted_data, force_upload=True)
+                    # add ONLY one submit
                     st.success("Form submitted successfully!")
+                    st.session_state.submitted_data = None
                     pdf_bytes = create_pdf(**st.session_state.submitted_data)
                     display_pdf(pdf_bytes)
             with col2:
