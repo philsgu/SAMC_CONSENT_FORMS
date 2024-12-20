@@ -463,11 +463,12 @@ def main():
                     pdf_bytes = create_pdf(**st.session_state.submitted_data)
                     display_pdf(pdf_bytes)
             with col2:
-                if st.button("Cancel Submission"):
-                    # Clear session state and reset form
-                    for key in list(st.session_state.keys()):
-                        del st.session_state[key]
-                    st.rerun()
+                pass
+                # if st.button("Cancel Submission"):
+                #     # Clear session state and reset form
+                #     for key in list(st.session_state.keys()):
+                #         del st.session_state[key]
+                #     st.rerun()
         else:
             # No duplicates found, proceed normally
             st.success("No duplicate submissions found! Form submitted successfully!")
