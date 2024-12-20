@@ -89,7 +89,7 @@ def upload_and_submit_to_supabase(submitted_data, force_upload=False):
             # can insert a popup with existing data of the contact person if matching data exist later
             #return False, f"Record for MRN {mrn} already exists"
             warning_message = f"""
-                **This case chas already been submitted by the following SAMC employee(s).  Please coordinate further.**
+                **This case has already been submitted by the following SAMC employee(s).  Please coordinate further.**
                 Patient MRN: {mrn}
                 Previous Submission:
                 """
