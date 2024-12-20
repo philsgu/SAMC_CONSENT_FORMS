@@ -61,10 +61,12 @@ def init_supabase():
     return supbase
 
 # UPLOAD PDF and DATA to Supbase
-def upload_and_submit_to_supabase(submitted_data):
+def upload_and_submit_to_supabase(submitted_data, force_upload=False):
     """
     Unified function to upload PDF and submit data to Supabase with duplicate prevention
         Args: submitted_data (dict): Dictionary containing all form submission data
+        force_upload (bool): If True, bypasses duplicate check and forces upload
+
         Returns: tuple: (success_flag, message)
     """
     try:
@@ -82,7 +84,7 @@ def upload_and_submit_to_supabase(submitted_data):
             "Medical Record Number", "eq", mrn
         ).execute()
         
-        if existing_records.data:
+        if existing_records.data and not force_upload:
             
             # can insert a popup with existing data of the contact person if matching data exist later
             #return False, f"Record for MRN {mrn} already exists"
@@ -456,7 +458,7 @@ def main():
             with col1:
                 if st.button("Proceed Submission ANYWAY"):
                     # Foce submission by setting existing_data to None
-                    success, message, _ = upload_and_submit_to_supabase(st.session_state.submitted_data)
+                    success, message, _ = upload_and_submit_to_supabase(st.session_state.submitted_data, force_upload=True)
                     st.success("Form submitted successfully!")
                     pdf_bytes = create_pdf(**st.session_state.submitted_data)
                     display_pdf(pdf_bytes)
