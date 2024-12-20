@@ -84,7 +84,7 @@ def upload_and_submit_to_supabase(submitted_data, force_upload=False):
             "Medical Record Number", "eq", mrn
         ).execute()
         
-        if existing_records.data and not force_upload:
+        if existing_records.data and len(existing_records.data) > 0 and not force_upload:
             
             # can insert a popup with existing data of the contact person if matching data exist later
             #return False, f"Record for MRN {mrn} already exists"
