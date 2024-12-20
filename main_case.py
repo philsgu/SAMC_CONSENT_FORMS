@@ -455,11 +455,11 @@ def main():
             col1, col2 = st.columns(2)
             with col1:
                 if st.button("Proceed Submission ANYWAY"):
-                # Foce submission by setting existing_data to None
-                success, message, _ = upload_and_submit_to_supabase(st.session_state.submitted_data)
-                st.success("Form submitted successfully!")
-                pdf_bytes = create_pdf(**st.session_state.submitted_data)
-                display_pdf(pdf_bytes)
+                    # Foce submission by setting existing_data to None
+                    success, message, _ = upload_and_submit_to_supabase(st.session_state.submitted_data)
+                    st.success("Form submitted successfully!")
+                    pdf_bytes = create_pdf(**st.session_state.submitted_data)
+                    display_pdf(pdf_bytes)
             with col2:
                 if st.button("Cancel Submission"):
                     # Clear session state and reset form
