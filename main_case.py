@@ -48,6 +48,7 @@ STATE_NAMES = {
     'WI': 'Wisconsin', 'WY': 'Wyoming'
 }
 
+############# SUPABASE CONNECTION ###################
 #Start Supabase Data Server Connection
 @st.cache_resource
 def init_supabase():
@@ -63,12 +64,8 @@ def init_supabase():
 def upload_and_submit_to_supabase(submitted_data):
     """
     Unified function to upload PDF and submit data to Supabase with duplicate prevention
-    
-    Args:
-        submitted_data (dict): Dictionary containing all form submission data
-    
-    Returns:
-        tuple: (success_flag, message)
+        Args: submitted_data (dict): Dictionary containing all form submission data
+        Returns: tuple: (success_flag, message)
     """
     try:
         # Initialize Supabase client
@@ -86,9 +83,42 @@ def upload_and_submit_to_supabase(submitted_data):
         ).execute()
         
         if existing_records.data:
-            pass
+            
             # can insert a popup with existing data of the contact person if matching data exist later
             #return False, f"Record for MRN {mrn} already exists"
+            warning_message = f"""
+                **This case chas already been submitted by the following SAMC employee(s).  Please coordinate further.**
+                Patient MRN: {mrn}
+                Previous Submission:
+                """
+            # Helper function to get the submission date and type
+            def get_submission_date_info(record):
+                signature_date = record.get('Signature Date')
+                verbal_auth_date = record.get('Verbal Auth Date')
+                if signature_date:
+                    return signature_date, "Signed"
+                elif verbal_auth_date:
+                    return verbal_auth_date, "Verbal"
+                else:
+                    return "Date not available", "Unknown"
+            # Sort records by date by most recent
+            sorted_records = sorted(
+                existing_records.data,
+                key=lambda x: (x.get('Signature Date') or x.get('Verbal Auth Date') or ''),
+                reverse=True
+            )
+            
+            # Add each sumission's details
+            for i, record in enumerate(existing_records.data, 1):
+                submission_date, auth_type = get_submission_date_info(record)
+                warning_message += f"""
+                Submission {i}:
+                - Name: {record.get("Employee First Name', '')} {record.get("Employee Last Name', '')}
+                - Dept: {record.get('Employee Department', '')}
+                - Email: {record.get('Employee Email', '')}
+                - Date Submitted: {submission_date}({auth_type} Authorization)
+                """
+            return True, warning_message, sorted_records
         
         # Generate PDF
         pdf_bytes = create_pdf(**submitted_data)
@@ -113,9 +143,7 @@ def upload_and_submit_to_supabase(submitted_data):
         
         # ADD the PDF file path to the database data
         database_data['pdf_file_path'] = file_path
-        #test above
-        st.info(database_data['pdf_file_path'])
-        
+            
         # Insert data into Supabase
         supabase.table("consentsamc_results").insert(database_data).execute()
     
@@ -124,6 +152,7 @@ def upload_and_submit_to_supabase(submitted_data):
     except Exception as e:
         return False, f"Unexpected error: {e}"
 
+####################### VALIDATION FUNCTIONS #############################
 
 # Name validation function
 def validate_name(name, field_name="Name"):
@@ -380,9 +409,9 @@ def display_pdf(pdf_bytes):
         ''', unsafe_allow_html=True)
     else:
         st.error("Failed to generate PDF")
-
+        
+######### MAIN FUNCTION ##########
 def main():
-
     st.subheader("AUTHORIZATION FOR MEDICAL CASE STUDY AND PUBLICATION OF DE-IDENTIFIED MEDICAL INFORMATION")
     st.markdown("""
                 ## Purpose of Authorization
@@ -412,10 +441,34 @@ def main():
             if key in st.session_state:
                 st.session_state[key] = ''
             
-
     # Display submitted data if exists
     if st.session_state.submitted_data:
-        st.success("Form submitted successfully!")
+        success, message, existing_data = upload_and_submit_to_supabase(st.session_state.submitted_data)
+        if existing_data:
+            # Display warning with multiple submissions
+            st.warning(message)
+            # Show number of existing submission
+            num_submissions = len(existing_data) if isinstance(existing_data, list) else 1
+            st.info(f"Found {num_submissions} previous submission(s) with this MRN.")
+
+            # Ask if user wants to proceed
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Proceed Submission ANYWAY"):
+                # Foce submission by setting existing_data to None
+                success, message, _ = upload_and_submit_to_supabase(st.session_state.submitted_data)
+                st.success("Form submitted successfully!")
+                pdf_bytes = create_pdf(**st.session_state.submitted_data)
+                display_pdf(pdf_bytes)
+            with col2:
+                if st.button("Cancel Submission"):
+                    # Clear session state and reset form
+                    for key in list(st.session_state.keys()):
+                        del st.session_state[key]
+                    st.rerun()
+    else:
+        # No duplicates found, proceed normally
+        st.success("No duplicate submissions found! Form submitted successfully!")
         pdf_bytes = create_pdf(**st.session_state.submitted_data)
         display_pdf(pdf_bytes)
 
