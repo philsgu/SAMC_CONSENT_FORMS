@@ -429,64 +429,53 @@ def main():
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.rerun()
+
     # Initialize session state if not exists
     if 'submitted' not in st.session_state:
         st.session_state.submitted = False
         st.session_state.submitted_data = None
+        st.session_state.proceed_clicked = False
 
-    # Reset form if previously submitted
-    if st.session_state.submitted:
-        # Reset all relevant session state variables
-        st.session_state.submitted = False
-        st.session_state.verbal_authorization = False
-        for key in ['first_name', 'last_name', 'email', 'phone', 'address', 'state','city','zipcode', 'dob', 'mrn', 'authorized_person', 'employee_first_name', 'employee_last_name', 'employee_email', 'employee_department', 'case_study_diagnosis']:
-            if key in st.session_state:
-                st.session_state[key] = ''
-
-    #Add proceed click session state for once shown
-    if "proceed_clicked" not in st.session_state:
-        st.session_state.proceed_clicked = False 
-            
-    # Display submitted data exists
-    if st.session_state.submitted_data:
+    # Check if we have submitted data to process
+    if st.session_state.submitted_data and not st.session_state.proceed_clicked:
         success, message, existing_data = upload_and_submit_to_supabase(st.session_state.submitted_data)
         if existing_data:
             # Display warning with multiple submissions
             st.warning(message)
-            # Show number of existing submission
             num_submissions = len(existing_data) if isinstance(existing_data, list) else 1
             st.info(f"Found {num_submissions} previous submission(s) with this MRN.")
-
-            # Ask if user wants to proceed
+        
             col1, col2 = st.columns(2)
             with col1:
-                #show if not clicked
-                if not st.session_state.proceed_clicked:
-                    if st.button("Proceed Submission ANYWAY"):
-                        # Mark the button as clicked
-                        st.session_state.proceed_clicked = True
-                        # Foce submission by setting existing_data to None
-                        success, message, _ = upload_and_submit_to_supabase(st.session_state.submitted_data, force_upload=True)
-                        # add ONLY one submit
+                if st.button("Proceed Submission ANYWAY"):
+                    st.session_state.proceed_clicked = True
+                    success, message, _ = upload_and_submit_to_supabase(st.session_state.submitted_data, force_upload=True)
+                    if success:
                         st.success("Form submitted successfully!")
-                        
                         pdf_bytes = create_pdf(**st.session_state.submitted_data)
                         display_pdf(pdf_bytes)
-                        st.session_state.submitted_data = None
+                    # Clear the submitted data after successful submission
+                    st.session_state.submitted_data = None
+                    st.rerun()
             with col2:
-                pass
-                # if st.button("Cancel Submission"):
-                #     # Clear session state and reset form
-                #     for key in list(st.session_state.keys()):
-                #         del st.session_state[key]
-                #     st.rerun()
+                if st.button("Cancel Submission"):
+                    # Clear session state and reset form
+                    st.session_state.submitted = False
+                    st.session_state.submitted_data = None
+                    st.session_state.proceed_clicked = False
+                    st.rerun()
         else:
-            # No duplicates found, proceed normally
-            st.success("No duplicate submissions found! Form submitted successfully!")
+            # No duplicates found, proceed with submission
+            st.success("Form submitted successfully!")
             pdf_bytes = create_pdf(**st.session_state.submitted_data)
             display_pdf(pdf_bytes)
+            # Clear the submitted data after successful submission
+            st.session_state.submitted_data = None
+            st.session_state.submitted = False
+            st.rerun()
+    
 
-     
+######### START FORM FIELDS ##################     
 
     with st.form("validation_form"):
         # Patient Information
@@ -618,7 +607,8 @@ def main():
             key='case_study_diagnosis',
             placeholder='Enter case study diagnosis'
         )
-        
+
+        ### SUBMIT HANDLER BUTTON ####
         submitted = st.form_submit_button("Submit")
         if submitted:
             # form validation
@@ -670,18 +660,14 @@ def main():
                     "Employee Department": employee_department,
                     "Case Study Diagnosis": case_study_diagnosis,
                 }
-                # Attempt to upload and submit
-                upload_and_submit_to_supabase(submitted_data)
-                # Clear any previous submission data
-                if 'submitted_data' in st.session_state:
-                    st.session_state.submitted_data = None
-
-                # Set submitted flag and store the new data
+                 # Only set the session state - don't upload to Supabase here
                 st.session_state.submitted = True
                 st.session_state.submitted_data = submitted_data
-
-                # Rerun the form
+                st.session_state.proceed_clicked = False
+                
+                # Rerun to show the confirmation/duplicate check
                 st.rerun()
+
             else:
                 # Display validation errors
                 for valid, message in validations:
