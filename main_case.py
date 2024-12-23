@@ -495,10 +495,11 @@ def main():
 
             col1, col2 = st.columns(2)
             with col1:
+                # Generate PDF first before uploading
+                pdf_bytes = create_pdf(**st.session_state.submitted_data)
                 if st.button("Proceed Submission ANYWAY"):
                     st.session_state.proceed_clicked = True
-                    # Generate PDF first before uploading
-                    pdf_bytes = create_pdf(**st.session_state.submitted_data)
+                    
                     if pdf_bytes:
                         # Show PDF download button immediately
                         st.success("Form generated successfully!")
