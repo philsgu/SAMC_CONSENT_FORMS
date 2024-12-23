@@ -433,8 +433,17 @@ def main():
     # Initialize session state if not exists
     if 'submitted' not in st.session_state:
         st.session_state.submitted = False
+    if 'submitted_data' not in st.session_state:
         st.session_state.submitted_data = None
+    if 'proceed_clicked' not in st.session_state:
         st.session_state.proceed_clicked = False
+    if 'success_message' not in st.session_state:
+        st.session_state.success_message = False
+    
+    # Display success message if needed
+    if st.session_state.success_message:
+        st.success("Form submitted successfully!")
+        st.session_state.success_message = False
 
     # Check if we have submitted data to process
     if st.session_state.submitted_data and not st.session_state.proceed_clicked:
@@ -454,29 +463,35 @@ def main():
                         st.success("Form submitted successfully!")
                         pdf_bytes = create_pdf(**st.session_state.submitted_data)
                         display_pdf(pdf_bytes)
-                    # Clear the submitted data after successful submission
-                    st.session_state.submitted_data = None
-                    st.rerun()
+
+                        # Set success message flag
+                        st.session_state.success_message = True
+                        # Clear form data
+                        for key in st.session_state.keys():
+                            if key not in ['success_message']:
+                                del st.session_state[key]
+                        st.rerun()
+                    
             with col2:
                 if st.button("Cancel Submission"):
-                    # Clear session state and reset form
-                    st.session_state.submitted = False
-                    st.session_state.submitted_data = None
-                    st.session_state.proceed_clicked = False
+                     # Clear session state and reset form
+                    for key in st.session_state.keys():
+                        if key not in ['success_message']:
+                            del st.session_state[key]
                     st.rerun()
         else:
             # No duplicates found, proceed with submission
-            st.success("Form submitted successfully!")
             pdf_bytes = create_pdf(**st.session_state.submitted_data)
             display_pdf(pdf_bytes)
-            # Clear the submitted data after successful submission
-            st.session_state.submitted_data = None
-            st.session_state.submitted = False
+            # Set success message flag
+            st.session_state.success_message = True
+            # Clear form data
+            for key in st.session_state.keys():
+                if key not in ['success_message']:
+                    del st.session_state[key]
             st.rerun()
     
-
 ######### START FORM FIELDS ##################     
-
     with st.form("validation_form"):
         # Patient Information
         st.header("Patient Information")
