@@ -495,22 +495,19 @@ def main():
 
             col1, col2 = st.columns(2)
             with col1:
-                # Generate PDF first before uploading
-                pdf_bytes = create_pdf(**st.session_state.submitted_data)
                 if st.button("Proceed Submission ANYWAY"):
                     st.session_state.proceed_clicked = True
-                    
-                    if pdf_bytes:
-                        # Show PDF download button immediately
-                        st.success("Form generated successfully!")
-                        display_pdf(pdf_bytes)
-                        # Then proceed with upload
-                        success, message, _ = upload_and_submit_to_supabase(st.session_state.submitted_data, force_upload=True)
-                        #if success:
-                            #st.success("Form submitted successfully!")
+                    success, message, _ = upload_and_submit_to_supabase(st.session_state.submitted_data, force_upload=True)
+                    if success:
+                        pdf_bytes = create_pdf(**st.session_state.submitted_data)
+                        if pdf_bytes:
+                            st.success("Form submitted successfully!")
+                            display_pdf(pdf_bytes)
+                           
                         st.session_state.success_message = True
                         st.session_state.submitted_data = None
                         clear_form()
+                        st.rerun()
             with col2:
                 if st.button("Cancel Submission"):
                     clear_form()
