@@ -507,12 +507,16 @@ def main():
                     clear_form()
                     st.rerun()
         else:
-             # No duplicates found, proceed with submission
-            pdf_bytes = create_pdf(**st.session_state.submitted_data)
-            display_pdf(pdf_bytes)
-            st.session_state.success_message = True
-            clear_form()
-            st.rerun()
+            # No duplicates found, proceed with submission
+            success, message, _ = upload_and_submit_to_supabase(st.session_state.submitted_data, force_upload=True)
+            if success:
+                pdf_bytes = create_pdf(**st.session_state.submitted_data)
+                if pdf_bytes:
+                    display_pdf(pdf_bytes)
+                    st.success("Form submitted successfully!")
+                st.session_state.success_message = True
+                st.session_state.submitted_data = None
+                clear_form()
     
 ######### START FORM FIELDS ##################     
     with st.form("validation_form"):
