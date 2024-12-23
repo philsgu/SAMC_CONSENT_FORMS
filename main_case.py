@@ -429,7 +429,7 @@ def main():
         form_keys = [
             'first_name', 'last_name', 'dob', 'mrn', 'email', 'phone',
             'address', 'city', 'state', 'zipcode', 'verbal_authorization',
-            'canvas', 'authorized_person', 'employee_first_name',
+            'authorized_person', 'employee_first_name',
             'employee_last_name', 'employee_email', 'employee_department',
             'case_study_diagnosis', 'submitted', 'submitted_data',
             'proceed_clicked', 'success_message'
@@ -457,7 +457,7 @@ def main():
         form_keys = [
             'first_name', 'last_name', 'dob', 'mrn', 'email', 'phone',
             'address', 'city', 'state', 'zipcode', 'verbal_authorization',
-            'canvas', 'authorized_person', 'employee_first_name',
+            'authorized_person', 'employee_first_name',
             'employee_last_name', 'employee_email', 'employee_department',
             'case_study_diagnosis', 'submitted', 'submitted_data',
             'proceed_clicked'
