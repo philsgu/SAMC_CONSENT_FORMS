@@ -390,7 +390,7 @@ def display_pdf(pdf_bytes):
     """
     if pdf_bytes:
         # Create base64 encoded PDF for viewing
-        base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+        #base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
         # Generate timestamp for unique filename
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         # Use Streamlit's download button
