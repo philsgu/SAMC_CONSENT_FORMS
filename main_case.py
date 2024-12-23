@@ -507,7 +507,7 @@ def main():
                         st.session_state.success_message = True
                         st.session_state.submitted_data = None
                         clear_form()
-                        #st.rerun()
+                        st.rerun()
             with col2:
                 if st.button("Cancel Submission"):
                     clear_form()
