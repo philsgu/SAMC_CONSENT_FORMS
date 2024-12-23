@@ -499,8 +499,9 @@ def main():
                     if success:
                         pdf_bytes = create_pdf(**st.session_state.submitted_data)
                         if pdf_bytes:
-                            display_pdf(pdf_bytes)
                             st.success("Form submitted successfully!")
+                            display_pdf(pdf_bytes)
+                           
                         st.session_state.success_message = True
                         st.session_state.submitted_data = None
                         clear_form()
@@ -514,8 +515,9 @@ def main():
             if success:  # Use the result from the first upload attempt
                 pdf_bytes = create_pdf(**st.session_state.submitted_data)
                 if pdf_bytes:
-                    display_pdf(pdf_bytes)
                     st.success("Form submitted successfully!")
+                    display_pdf(pdf_bytes)
+                    
                 st.session_state.success_message = True
                 st.session_state.submitted_data = None
                 clear_form()
