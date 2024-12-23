@@ -425,9 +425,21 @@ def main():
                 """)
     # Add a reset button
     if st.button("Reset Form"):
-        # clear all session state variables
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
+        # List of all form field keys
+        form_keys = [
+            'first_name', 'last_name', 'dob', 'mrn', 'email', 'phone',
+            'address', 'city', 'state', 'zipcode', 'verbal_authorization',
+            'canvas', 'authorized_person', 'employee_first_name',
+            'employee_last_name', 'employee_email', 'employee_department',
+            'case_study_diagnosis', 'submitted', 'submitted_data',
+            'proceed_clicked', 'success_message'
+        ]
+        
+        # Clear each key individually
+        for key in form_keys:
+            if key in st.session_state:
+                del st.session_state[key]
+        
         st.rerun()
 
     # Initialize session state if not exists
@@ -440,55 +452,66 @@ def main():
     if 'success_message' not in st.session_state:
         st.session_state.success_message = False
     
+    # Function to clear form fields
+    def clear_form():
+        form_keys = [
+            'first_name', 'last_name', 'dob', 'mrn', 'email', 'phone',
+            'address', 'city', 'state', 'zipcode', 'verbal_authorization',
+            'canvas', 'authorized_person', 'employee_first_name',
+            'employee_last_name', 'employee_email', 'employee_department',
+            'case_study_diagnosis', 'submitted', 'submitted_data',
+            'proceed_clicked'
+        ]
+        
+        for key in form_keys:
+            if key in st.session_state:
+                if key == 'dob':
+                    st.session_state[key] = None
+                elif key == 'state':
+                    st.session_state[key] = ''
+                elif key in ['verbal_authorization', 'submitted', 'proceed_clicked']:
+                    st.session_state[key] = False
+                else:
+                    st.session_state[key] = ''
+    
     # Display success message if needed
     if st.session_state.success_message:
         st.success("Form submitted successfully!")
+        clear_form()
         st.session_state.success_message = False
+        st.rerun()
 
     # Check if we have submitted data to process
     if st.session_state.submitted_data and not st.session_state.proceed_clicked:
         success, message, existing_data = upload_and_submit_to_supabase(st.session_state.submitted_data)
+        
         if existing_data:
             # Display warning with multiple submissions
             st.warning(message)
             num_submissions = len(existing_data) if isinstance(existing_data, list) else 1
             st.info(f"Found {num_submissions} previous submission(s) with this MRN.")
-        
+
             col1, col2 = st.columns(2)
             with col1:
                 if st.button("Proceed Submission ANYWAY"):
                     st.session_state.proceed_clicked = True
                     success, message, _ = upload_and_submit_to_supabase(st.session_state.submitted_data, force_upload=True)
                     if success:
-                        st.success("Form submitted successfully!")
                         pdf_bytes = create_pdf(**st.session_state.submitted_data)
                         display_pdf(pdf_bytes)
-
-                        # Set success message flag
                         st.session_state.success_message = True
-                        # Clear form data
-                        for key in st.session_state.keys():
-                            if key not in ['success_message']:
-                                del st.session_state[key]
+                        clear_form()
                         st.rerun()
-                    
             with col2:
                 if st.button("Cancel Submission"):
-                     # Clear session state and reset form
-                    for key in st.session_state.keys():
-                        if key not in ['success_message']:
-                            del st.session_state[key]
+                    clear_form()
                     st.rerun()
         else:
-            # No duplicates found, proceed with submission
+             # No duplicates found, proceed with submission
             pdf_bytes = create_pdf(**st.session_state.submitted_data)
             display_pdf(pdf_bytes)
-            # Set success message flag
             st.session_state.success_message = True
-            # Clear form data
-            for key in st.session_state.keys():
-                if key not in ['success_message']:
-                    del st.session_state[key]
+            clear_form()
             st.rerun()
     
 ######### START FORM FIELDS ##################     
