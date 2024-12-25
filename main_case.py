@@ -390,9 +390,11 @@ def display_pdf(pdf_bytes):
     """
     if pdf_bytes:
         # Create base64 encoded PDF for viewing
-        #base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+        base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+        
         # Generate timestamp for unique filename
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
         # Use Streamlit's download button
         st.download_button(
             label="Download Case Study Consent PDF",
@@ -403,14 +405,14 @@ def display_pdf(pdf_bytes):
         )
         
         # Try a different approach for PDF viewing
-        # st.markdown(f'''
-        # <embed 
-        #     src="data:application/pdf;base64,{base64_pdf}" 
-        #     width="700" 
-        #     height="1000" 
-        #     type="application/pdf">
-        # </embed>
-        # ''', unsafe_allow_html=True)
+        st.markdown(f'''
+        <embed 
+             src="data:application/pdf;base64,{base64_pdf}" 
+             width="700" 
+             height="1000" 
+             type="application/pdf">
+        </embed>
+        ''', unsafe_allow_html=True)
     else:
         st.error("Failed to generate PDF")
         
