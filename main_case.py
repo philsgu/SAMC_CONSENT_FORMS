@@ -772,7 +772,7 @@ def main():
                 st.session_state.proceed_clicked = False
 
                 # NTFY notify
-                send_ntfy_mssg(st.session_date.submitted_data)
+                send_ntfy_mssg(**st.session_date.submitted_data)
                 
                 # Rerun to show the confirmation/duplicate check
                 st.rerun()
