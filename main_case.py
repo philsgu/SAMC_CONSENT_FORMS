@@ -429,45 +429,31 @@ def send_ntfy_mssg(**kwargs):
             - Case Study Diagnosis
             - Signature Date or Verbal Auth Date
     """
-    try:
-        # Get employee details
-        employee_name = f"{kwargs.get('Employee First Name', '')} {kwargs.get('Employee Last Name', '')}"
-        employee_email = kwargs.get('Employee Email', '')
-        diagnosis = kwargs.get('Case Study Diagnosis', '')
-        
-        # Get submission date (either signature date or verbal auth date)
-        submission_date = kwargs.get('Signature Date') or kwargs.get('Verbal Auth Date') or today_str
-        
-        # Create message
-        message = (
-            f"Date: {submission_date}\n"
-            f"Employee: {employee_name}\n"
-            f"Email: {employee_email}\n"
-            f"Topic: {diagnosis}"
-        )
-        
-        # Send notification
-        response = requests.post(
-            "https://ntfy.sh/gmeconsent",
-            data=message,
-            headers={
-                "Title": "Case Consent Form Submission",
-                "Priority": "urgent",
-                "Tags": "📝,✅"  # Optional: Add emoji tags
-            },
-            timeout=5  # Add timeout to prevent hanging
-        )
-        
-        # Check if request was successful
-        response.raise_for_status()
-        return True
-        
-    except requests.RequestException as e:
-        st.error(f"Failed to send notification: {str(e)}")
-        return False
-    except Exception as e:
-        st.error(f"Error processing notification: {str(e)}")
-        return False
+    # Get employee details
+    employee_name = f"{kwargs.get('Employee First Name', '')} {kwargs.get('Employee Last Name', '')}"
+    employee_email = kwargs.get('Employee Email', '')
+    diagnosis = kwargs.get('Case Study Diagnosis', '')
+    
+    # Get submission date (either signature date or verbal auth date)
+    submission_date = kwargs.get('Signature Date') or kwargs.get('Verbal Auth Date') or today_str
+    
+    # Create message
+    message = (
+        f"Date: {submission_date}\n"
+        f"Employee: {employee_name}\n"
+        f"Email: {employee_email}\n"
+        f"Topic: {diagnosis}"
+    )
+    
+    # Send notification
+    response = requests.post(
+        "https://ntfy.sh/gmeconsent",
+        data=message,
+        headers={
+            "Title": "Case Consent Form Submission",
+            "Priority": "urgent",
+        },
+    )
 
 
 ######### MAIN FUNCTION ##########
@@ -559,6 +545,7 @@ def main():
                         if pdf_bytes:
                             st.success("Form submitted successfully!")
                             display_pdf(pdf_bytes)
+                            send_ntfy_mssg(**st.session_state.submitted_data)
                            
                         st.session_state.success_message = True
                         st.session_state.submitted_data = None
@@ -575,6 +562,7 @@ def main():
                 if pdf_bytes:
                     st.success("Form submitted successfully!")
                     display_pdf(pdf_bytes)
+                    send_ntfy_mssg(**st.session_state.submitted_data)
                     
                 st.session_state.success_message = True
                 st.session_state.submitted_data = None
@@ -770,9 +758,6 @@ def main():
                 st.session_state.submitted = True
                 st.session_state.submitted_data = submitted_data
                 st.session_state.proceed_clicked = False
-
-                # NTFY notify
-                send_ntfy_mssg(**st.session_state.submitted_data)
                 
                 # Rerun to show the confirmation/duplicate check
                 st.rerun()
