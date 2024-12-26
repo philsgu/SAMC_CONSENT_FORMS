@@ -180,10 +180,10 @@ def validate_name(name, field_name="Name"):
     
     if field_name == "Case Study Diagnosis":
         # Allow letters, numbers, spaces, hyphens, and periods
-        if not re.match(r'^[A-Za-z0-9\s.-]+$', name):
-            return False, f"{field_name} should only contain letters, numbers, spaces, periods, and hyphens"
-        if len(name) > 100:
-            return False, f"{field_name} should be less than 100 characters long"
+        # if not re.match(r'^[A-Za-z0-9\s.-]+$', name):
+        #     return False, f"{field_name} should only contain letters, numbers, spaces, periods, and hyphens"
+        if len(name) > 60:
+            return False, f"{field_name} should be less than 60 characters long"
         return True, ""
     
     # Original validation for other name fields
