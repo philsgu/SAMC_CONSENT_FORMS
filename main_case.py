@@ -12,7 +12,6 @@ import fitz # PYMuPDF
 import base64
 import uuid
 
-
 today = date.today()
 today_str = today.strftime("%m/%d/%Y")
 
@@ -60,6 +59,8 @@ def init_supabase():
     supbase: Client = create_client(url, key)
     return supbase
 
+# get global file path 
+path_context = {}
 # UPLOAD PDF and DATA to Supbase
 def upload_and_submit_to_supabase(submitted_data, force_upload=False):
     """
@@ -131,7 +132,7 @@ def upload_and_submit_to_supabase(submitted_data, force_upload=False):
         # Create filename for PDF
         filename = f"{last_name}_{first_name}_{mrn}_{unique_id}.pdf"
         file_path = f"case_pdf_received/{filename}"
-        
+        path_context["file_path"] = file_path
         # Upload PDF to Supabase storage
         pdf_upload = supabase.storage.from_('completed_consent').upload(
             file=pdf_bytes,
@@ -154,6 +155,22 @@ def upload_and_submit_to_supabase(submitted_data, force_upload=False):
     except Exception as e:
         return False, f"Unexpected error: {e}", None
 
+##### FUNCTION TO GET PDF URL FROM SUPABASE ######
+def get_public_url():
+    """
+    Get the public URL for a file in Supabase storage.Args:
+        supabase: Supabase client instance
+        file_path: Path of the file in Supabase storage
+    Returns:
+        str: Public URL of the file"""
+    supabase = init_supabase()
+    try:
+        # Get the public URL for the file
+        public_url = supabase.storage.from_('completed_consent').get_public_url(path_context["file_path"])
+        return public_url
+    except Exception as e:
+        st.error(f"Error getting PDF URL: {e}")
+        return None
 ####################### VALIDATION FUNCTIONS #############################
 
 # Name validation function
@@ -378,44 +395,28 @@ def create_pdf(**kwargs):
 
     return pdf_bytes
 
-def display_pdf(pdf_bytes):
+def display_pdf_download():
     """
-    Create a download and view link for the PDF
-    
+    Create download button link using Supabase public URL
     Args:
-        pdf_bytes (bytes): PDF document bytes
-    
-    Returns:
-        None (displays PDF in Streamlit)
+    submitted_data:  Dict containing form submission data
     """
-    if pdf_bytes:
-        # Create base64 encoded PDF for viewing
-        base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
-        
-        # Generate timestamp for unique filename
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
-        # Use Streamlit's download button
-        st.download_button(
-            label="Download Case Study Consent PDF",
-            data=pdf_bytes,
-            file_name=f"case_study_consent_{timestamp}.pdf",
-            mime="application/pdf",
-            key='pdf_download',
-        )
-        
-        # Try a different approach for PDF viewing
-        st.markdown(f'''
-        <embed 
-             src="data:application/pdf;base64,{base64_pdf}" 
-             width="700" 
-             height="1000" 
-             type="application/pdf">
-        </embed>
-        ''', unsafe_allow_html=True)
-    else:
-        st.error("Failed to generate PDF")
-        
+    try:
+   
+
+        # Get the public URL for the PDF file
+        file_path = get_public_url()
+        if not file_path:
+            st.error("PDF file path not found in submission data.")
+            return
+
+        # Get the public URL for the PDF file
+        else:
+            st.link_button("View Completed Form", file_path)
+                
+    except Exception as e:
+        st.error(f"Error getting PDF URL: {e}")
+  
 ##### NTFY notification function ####
 def send_ntfy_mssg(**kwargs):
     """
@@ -544,13 +545,13 @@ def main():
                         pdf_bytes = create_pdf(**st.session_state.submitted_data)
                         if pdf_bytes:
                             st.success("Form submitted successfully!")
-                            display_pdf(pdf_bytes)
+                            display_pdf_download()
                             send_ntfy_mssg(**st.session_state.submitted_data)
                            
                         st.session_state.success_message = True
                         st.session_state.submitted_data = None
                         clear_form()
-                        # st.rerun()
+                        #st.rerun()
             with col2:
                 if st.button("Cancel Submission"):
                     clear_form()
@@ -561,7 +562,7 @@ def main():
                 pdf_bytes = create_pdf(**st.session_state.submitted_data)
                 if pdf_bytes:
                     st.success("Form submitted successfully!")
-                    display_pdf(pdf_bytes)
+                    display_pdf_download()
                     send_ntfy_mssg(**st.session_state.submitted_data)
                     
                 st.session_state.success_message = True
