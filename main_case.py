@@ -496,6 +496,11 @@ def main():
         st.session_state.proceed_clicked = False
     if 'success_message' not in st.session_state:
         st.session_state.success_message = False
+    if 'disable_button' not in st.session_state:
+        st.session_state.disable_button = False
+    
+    def disable_button():
+        st.session_state.disable_button = True
     
     # Function to clear form fields
     def clear_form():
@@ -538,22 +543,24 @@ def main():
 
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("Proceed Submission ANYWAY"):
-                    st.session_state.proceed_clicked = True
+                if st.button("Proceed Submission ANYWAY", on_click=disable_button, disabled=st.session_state.disable_button):
+                    
                     success, message, _ = upload_and_submit_to_supabase(st.session_state.submitted_data, force_upload=True)
                     if success:
                         pdf_bytes = create_pdf(**st.session_state.submitted_data)
                         if pdf_bytes:
                             st.success("Form submitted successfully!")
+                            st.session_state.proceed_clicked = True
                             display_pdf_download()
                             send_ntfy_mssg(**st.session_state.submitted_data)
+                            
                            
                         st.session_state.success_message = True
                         st.session_state.submitted_data = None
                         clear_form()
                         #st.rerun()
             with col2:
-                if st.button("Cancel Submission"):
+                if st.button("Cancel Submission", disabled=st.session_state.disable_button):
                     clear_form()
                     st.rerun()
         else:
@@ -759,6 +766,7 @@ def main():
                 st.session_state.submitted = True
                 st.session_state.submitted_data = submitted_data
                 st.session_state.proceed_clicked = False
+                st.session_state.disable_button = False
                 
                 # Rerun to show the confirmation/duplicate check
                 st.rerun()
