@@ -466,7 +466,7 @@ def main():
 
                 It is important to note that this authorization cannot be used if the diagnosis is such that it could reasonably identify the patient, such as in the case of a rare disease. Depending on the publisher’s requirements, authorization may be obtained either by having the patient sign this document or through verbal consent.
 
-                **Important Note:** Form submission is required to generate PDF document file for download.  All submitted data will be stored in HIPAA-compliant database. For technical support, please contact phillip.kim@samc.com.
+                **Important Note:** Form submission is required to generate PDF document file for view and download.  All submitted data will be stored in a HIPAA-compliant database. Patients must submit a valid email address to receive a copy of this form.  If NOT, please use self to complete and view the signed form. Any duplicate submissions either by the same/different employee will be alerted once form is submitted.  For technical support, please contact phillip.kim@samc.com.
                 """)
     # Add a reset button
     if st.button("Reset Form"):
@@ -655,7 +655,7 @@ def main():
             value=False,
             key='verbal_authorization',
         )
-        st.text("Please sign below (Patient/Representative Signature)*")
+        st.text("Please sign below using touch or mouse(Patient/Representative Signature)*")
         # EMBEDD SIGNATURE CANVAS
         canvas_result = st_canvas(
             fill_color="rgba(255, 165, 0, 0.3)",  # Fixed fill color with some opacity
