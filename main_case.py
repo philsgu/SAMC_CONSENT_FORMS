@@ -47,6 +47,9 @@ STATE_NAMES = {
     'WI': 'Wisconsin', 'WY': 'Wyoming'
 }
 
+CASE_CATEGORIES  = [
+    "Cardiology", "Dermatology", "Emergency Med", "Endocrinology", "ENT", "Family Med", "Gastroenterology", "Infectious Disease","Nephrology", "Neurology", "Hem/Onc", "OB/GYN", "Ophthmalology", "Orthopedics", "Palliative Care", "Pathology","Pediatrics", "Psych", "Pulmonary", "Radiology", "Rheumatology", "Surgery", "Urology",  
+]
 ############# SUPABASE CONNECTION ###################
 #Start Supabase Data Server Connection
 @st.cache_resource
@@ -90,7 +93,7 @@ def upload_and_submit_to_supabase(submitted_data, force_upload=False):
             # can insert a popup with existing data of the contact person if matching data exist later
             #return False, f"Record for MRN {mrn} already exists"
             warning_message = f"""
-                **This case has already been submitted by the following SAMC employee(s).  Please coordinate further.**
+                **This case has already been submitted by the following SAMC employee(s).  Please coordinate further.**\n
                 Patient MRN: {mrn}
                 Previous Submission:
                 """
@@ -119,6 +122,7 @@ def upload_and_submit_to_supabase(submitted_data, force_upload=False):
                 - Name: {record.get('Employee First Name', '')} {record.get('Employee Last Name', '')}
                 - Dept: {record.get('Employee Department', '')}
                 - Email: {record.get('Employee Email', '')}
+                - Case Category: {record.get('Case Category', '')}
                 - Date Submitted: {submission_date}({auth_type} Authorization)
                 """
             return True, warning_message, sorted_records
@@ -182,8 +186,8 @@ def validate_name(name, field_name="Name"):
         # Allow letters, numbers, spaces, hyphens, and periods
         # if not re.match(r'^[A-Za-z0-9\s.-]+$', name):
         #     return False, f"{field_name} should only contain letters, numbers, spaces, periods, and hyphens"
-        if len(name) > 60:
-            return False, f"{field_name} should be less than 60 characters long"
+        if len(name) > 50:
+            return False, f"{field_name} should be less than 50 characters long"
         return True, ""
     
     # Original validation for other name fields
@@ -235,6 +239,11 @@ def validate_city(city):
 def validate_state(state):
     if not state or state not in STATES:
         return False, "Please select a valid state"
+    return True, ""
+
+def validate_category(category):
+    if not category or category not in CASE_CATEGORIES:
+        return False, "Please select a valid case category"
     return True, ""
 
 # Zip code validation function
@@ -433,7 +442,7 @@ def send_ntfy_mssg(**kwargs):
     # Get employee details
     employee_name = f"{kwargs.get('Employee First Name', '')} {kwargs.get('Employee Last Name', '')}"
     employee_email = kwargs.get('Employee Email', '')
-    diagnosis = kwargs.get('Case Study Diagnosis', '')
+    category = kwargs.get('Case Category', '')
     
     # Get submission date (either signature date or verbal auth date)
     submission_date = kwargs.get('Signature Date') or kwargs.get('Verbal Auth Date') or today_str
@@ -443,7 +452,7 @@ def send_ntfy_mssg(**kwargs):
         f"Date: {submission_date}\n"
         f"Employee: {employee_name}\n"
         f"Email: {employee_email}\n"
-        f"Topic: {diagnosis}"
+        f"Category: {category}"
     )
     
     # Send notification
@@ -475,8 +484,9 @@ def main():
             'first_name', 'last_name', 'dob', 'mrn', 'email', 'phone',
             'address', 'city', 'state', 'zipcode', 'verbal_authorization',
             'authorized_person', 'employee_first_name',
-            'employee_last_name', 'employee_email', 'employee_department',
-            'case_study_diagnosis', 'submitted', 'submitted_data',
+            'employee_last_name', 'employee_email', 'employee_department', 
+            'case_category', 'case_study_diagnosis', 
+            'submitted', 'submitted_data',
             'proceed_clicked', 'success_message'
         ]
         
@@ -517,7 +527,7 @@ def main():
             if key in st.session_state:
                 if key == 'dob':
                     st.session_state[key] = None
-                elif key == 'state':
+                elif key == 'state' or key == 'case_category':
                     st.session_state[key] = ''
                 elif key in ['verbal_authorization', 'submitted', 'proceed_clicked']:
                     st.session_state[key] = False
@@ -702,10 +712,15 @@ def main():
             key='employee_department',
             placeholder='Enter department'
         )
+        case_category = st.selectbox(
+            "Case Category*", 
+            options=[''] + CASE_CATEGORIES,
+            key='case_category')
+        
         case_study_diagnosis = st.text_input(
-            "Case Study Diagnosis*", 
+            "Case Study Diagnosis/Descripton (< 50 chars)*", 
             key='case_study_diagnosis',
-            placeholder='Enter case study diagnosis'
+            placeholder='Describe case study diagnosis'
         )
 
         ### SUBMIT HANDLER BUTTON ####
@@ -729,6 +744,7 @@ def main():
                 validate_name(employee_last_name, "Employee Last Name"),
                 validate_email(employee_email, "Employee SAMC Email"),
                 validate_name(employee_department, "Employee Department"),
+                validate_category(case_category),
                 validate_name(case_study_diagnosis, "Case Study Diagnosis"),
             ]
             #validate signatured based on verbal authorization status
@@ -758,6 +774,7 @@ def main():
                     "Employee Last Name": employee_last_name,
                     "Employee Email": employee_email,
                     "Employee Department": employee_department,
+                    "Case Category": case_category,
                     "Case Study Diagnosis": case_study_diagnosis,
                 }
                     
