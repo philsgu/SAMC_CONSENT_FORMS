@@ -292,7 +292,7 @@ def validate_signature(canvas_result, verbal_authorization):
     if img_array.shape[2] == 4:  # RGBA image
         # Check if any pixel has opacity > 0
         if np.max(img_array[:,:,3]) == 0:
-            return False, "Please provide a signature or verbal autorization."
+            return False, "Please provide a signature or verbal authorization"
     
     return True, ""
 # Use session state to pass data into PDF with collected image
